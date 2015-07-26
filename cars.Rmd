@@ -1,0 +1,213 @@
+---
+title: "cars"
+author: "Yadu"
+date: "July 23, 2015"
+output: html_document
+---
+First we have to install the package ggplot2:
+```{r}
+#install.packages("ggplot2")
+```
+
+Next, we have to load the following packages (ggplot2 to generate scatterplots, plyr to change the column names, and datasets so that we can obtain the mtcars dataset:
+```{r}
+library(ggplot2)
+library(plyr)
+library(datasets)
+```
+
+Next, we change the names of the columns as follows:
+```{r}
+colnames(mtcars) <- c("Mileage (miles/gallon)", 
+"Number of Cylinders", 
+"Displacement (cubic inches)", 
+"Gross Horsepower", 
+"Rear Axle Ratio", 
+"Weight (lb/1000)",
+"Quarter Mile Time (Seconds)", 
+"Engine Shape (V or Straight)", 
+"Manual or Automatic Transmission",
+"Number of Forward Gears", 
+"Number of Carburettors")
+mtcars
+```
+
+Next, we have to substitute some of the quantitative data with qualitative data:
+```{r}
+mtcars$`Engine Shape (V or Straight)` <- gsub("0", "V", 
+mtcars$`Engine Shape (V or Straight)`)
+mtcars$`Engine Shape (V or Straight)` <- gsub("1", "Straight", 
+mtcars$`Engine Shape (V or Straight)`)
+mtcars$`Manual or Automatic Transmission` <- gsub("0", "Automatic", 
+mtcars$`Manual or Automatic Transmission`)
+mtcars$`Manual or Automatic Transmission` <- gsub("1", "Manual", 
+mtcars$`Manual or Automatic Transmission`)
+mtcars
+```
+
+Next, we obtain data regarding the internal structure of the data:
+```{r}
+str(mtcars)
+summary(mtcars)
+```
+
+Next, we calculate the amount of time required to travel a full mile as follows:
+```{r}
+mtcars$`Full Mile Time (Seconds)` <- (mtcars$`Quarter Mile Time (Seconds)`)*4
+```
+
+The result is an entire new column consisting of quantitative data:
+```{r}
+mtcars$`Full Mile Time (Seconds)`
+```
+
+Next, we take the inverse of the quantity previously calculated to obtain the maximum speed of the vehicle:
+```{r}
+mtcars$`Speed (Miles Per Second)` <- 1/(mtcars$`Full Mile Time (Seconds)`)
+```
+
+Here also, we obtain an entire new column consisting of quantitative data:
+```{r}
+mtcars$`Speed (Miles Per Second)`
+```
+
+Next, we calculate the number of revolutions per minute as follows:
+```{r}
+mtcars$`Revolutions Per Minute` <- (mtcars$`Speed (Miles Per Second)`)*2112*(mtcars$`Rear Axle Ratio`)
+```
+
+Like the previous two data sets, this is also a column consisting of quantitative data:
+```{r}
+mtcars$`Revolutions Per Minute`
+```
+
+Next, we calculate torque as follows:
+```{r}
+mtcars$`Torque` <- 
+((mtcars$`Gross Horsepower`)*5252)/(mtcars$`Revolutions Per Minute`)
+```
+
+Again, we have another column consisting of quantitative data:
+```{r}
+mtcars$`Torque`
+```
+
+Next, we take two subsets of the newly updated dataset:
+```{r}
+cardata1 <- mtcars[c(15,4)]
+cardata1
+cardata2 <- mtcars[c(14,4)]
+cardata2
+```
+
+
+We can also use data science to determine whether or not torque and gross horsepower are dependent of each other. Let us calculate the probability that a randomly selected model has a torque that is at least 5,000 and has a gross horsepower that is at least 200:
+```{r}
+#From this, the probability that a randomly selected model has a minimal torque of 5,000 is 22/32. We determine the answer by dividing the number of observation in this subset by the total number of observations in the original set.
+c1 <- cardata1[cardata1$`Torque` >= 5000, c("Torque", "Gross Horsepower")]
+str(c1)
+
+#From this, the probability that a randomly selected model has a minimal gross horsepower of 200 is 7/32. We determine the answer the same way we determined it perivously.
+c2 <- cardata1[cardata1$`Gross Horsepower` >= 200, c("Torque", "Gross Horsepower")]
+str(c2)
+
+
+#After multiplying the two probabilites we get an answer of 0.15. 
+
+
+c3 <- cardata1[cardata1$`Torque` >= 5000 & cardata1$`Gross Horsepower` >= 200, c("Torque", "Gross Horsepower")]
+str(c3)
+
+#From this, the probability that a randomly selected model has both a minimal gross horsepower of 200 and a minimal torque of 5,000 is 7/32 or 0.22. Since this does not exactly equal the probability that we previously computed, we can conclude that torque and gross horsepower are dependent on each other. 
+
+```
+
+Let us do the same analysis that we did for the previous subset:
+
+```{r}
+#P(Revolutions Per Minute >= 110) = 14/32
+c4 <- cardata2[cardata2$`Revolutions Per Minute` >= 110, c("Revolutions Per Minute", "Gross Horsepower")]
+str(c4)
+
+#P(Gross Horsepower >= 90) = 27/32
+c5 <- cardata2[cardata2$`Gross Horsepower` >= 90, c("Revolutions Per Minute", "Gross Horsepower")]
+str(c5)
+
+#Multiplying the two probabilities we get 0.37.
+
+#P(Revolutions Per Minute >= 110 AND Gross Horsepower >= 90) = 10/32 = 0.32
+c6 <- cardata2[cardata2$`Gross Horsepower` >= 90 & cardata2$`Revolutions Per Minute` >= 110, c("Revolutions Per Minute", "Gross Horsepower")]
+str(c6)
+
+#In this case also, both quantities are dependent on each other. 
+```
+
+We want to find out if horsepower have a linear correlation with any of the calculated quantities. We answer the question by generating scatterplots, lines of best fit, and loess curves of best fit as follows:
+
+```{r}
+require(ggplot2)
+
+ggplot(data = cardata1, 
+aes(x = cardata1$`Torque`, 
+y = cardata1$`Gross Horsepower`))+
+geom_point(shape = 1)+
+geom_smooth(method = lm)+
+xlab("Torque")+
+ylab("Gross Horsepower")+
+ggtitle("Correlation between Gross Horsepower and Torque")
+
+ggplot(data = cardata1, 
+aes(x = cardata1$`Torque`, 
+y = cardata1$`Gross Horsepower`))+
+geom_point(shape = 1)+
+geom_smooth()+
+xlab("Torque")+
+ylab("Gross Horsepower")+
+ggtitle("Correlation between Gross Horsepower and Torque")
+
+ggplot(data = cardata2, 
+aes(x = cardata2$`Revolutions Per Minute`, 
+y = cardata2$`Gross Horsepower`))+
+geom_point(shape = 1)+
+geom_smooth(method = lm)+
+xlab("Revolutions Per Minute")+
+ylab("Gross Horsepower")+
+ggtitle("Correlation between Gross Horsepower and Revolutions Per Minute")
+
+ggplot(data = cardata2, 
+aes(x = cardata2$`Revolutions Per Minute`, 
+y = cardata2$`Gross Horsepower`))+
+geom_point(shape = 1)+
+geom_smooth()+
+xlab("Revolutions Per Minute")+
+ylab("Gross Horsepower")+
+ggtitle("Correlation between Gross Horsepower and Revolutions Per Minute")
+```
+
+Then, we calculate the correlation coefficients for both sets of data as follows:
+
+```{r}
+cor(cardata1$`Gross Horsepower`, cardata1$`Torque`)
+cor(cardata2$`Gross Horsepower`, cardata2$`Revolutions Per Minute`)
+
+#Horsepower has an almost-linear correlation with torque but not with the number of revolutions per minute. A line of best fit does exist in the scatter plot. The correlation coefficient with torque is 0.91 which is close to 1 which indicates that the correlation is almost linear. The correlation coefficient with the number of revolutions per minute is 0.06 which is close to 0 which indicates that there is almost no linear correlation with the number of revolutions per minute. It is almost impossible for a line of best fit to exist. However, it is possible for a loess smothed fit curve to exist for both relations.     
+```
+
+We generate frequency histograms for Gross Horsepower, Torque, and Revolutins Per Minute as follows:
+
+```{r}
+require(ggplot2)
+qplot(cardata1$`Gross Horsepower`, data = cardata1, xlab = 'Gross Horsepower')
+qplot(cardata1$`Torque`, data = cardata1, xlab = 'Torque')
+qplot(cardata2$`Revolutions Per Minute`, data = cardata2, xlab = 'Revolutions Per Minute')
+#None of the above distributions are normal. 
+```
+
+Here are the corresponding standard deviations for the above histograms:
+
+```{r}
+sd(cardata1$`Gross Horsepower`)
+sd(cardata1$`Torque`)
+sd(cardata2$`Revolutions Per Minute`)
+#The data values for torque are the furthest spread from the mean because the standard deviation for that data set is equivalent to 3,383.843. 
+```
